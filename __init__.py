@@ -84,6 +84,7 @@ def exp10(x):
 
 Builder.load_string('''
 #:kivy 1.1.0
+#:import CoreImage kivy.core.image.Image
 
 <RotateLabel>:
     canvas.before:
@@ -92,6 +93,15 @@ Builder.load_string('''
             matrix: self.transform
     canvas.after:
         PopMatrix
+
+<ImageGraph>:
+    canvas.before:
+        Color:
+            a:1
+        Rectangle:
+            pos: (self.pos[0]+self._img_pos[0],self.pos[1]+self._img_pos[1]) if self._img_pos else self.pos
+            size: self._img_size if self._img_size else self.size
+            texture: (CoreImage(self.source).texture.get_region(self.region[0],self.region[1],self.region[2]-self.region[0],self.region[3]-self.region[1]) if self.region else CoreImage(self.source).texture) if self.source else None
 
 ''')
 
@@ -871,6 +881,35 @@ class Graph(Widget):
     defaults to [].
     '''
 
+class ImageGraph(Graph):
+    '''ImageGraph class, see module documentation for more information.
+    This allows you to plot on top of an image (ex. existing chart or graph).
+    
+    '''
+    source = StringProperty()
+    ''' Source of plot background image.  
+    '''
+    
+    region = ListProperty()
+    ''' Region of background image to display in the plot area. If empty
+    the entire image is displayed.
+    
+    :data:`region` is a :class:`~kivy.properties.ListProperty`,
+    defaults to []. Region format is [xmin,ymin,xmax,ymax].
+    '''
+        
+    # Internal relative position of image, same as plot area pos
+    _img_pos = ListProperty()
+    
+    # Internal size of image, same as plot area size
+    _img_size = ListProperty()
+    
+    def _update_plots(self, size):
+        # Update the size of the background image
+        self._img_pos = (size[0],size[1])
+        self._img_size = (size[2] - size[0], size[3] - size[1])
+        super(ImageGraph, self)._update_plots(size)
+        
 
 class Plot(EventDispatcher):
     '''Plot class, see module documentation for more information.
